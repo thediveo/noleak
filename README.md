@@ -1,4 +1,10 @@
-# 🌊 `noleak`
+<!-- markdownlint-disable-next-line MD022 -->
+# `noleak`
+<img align="right" src="images/noleaky-small.png">
+
+[![PkgGoDev](https://img.shields.io/badge/-reference-blue?logo=go&logoColor=white&labelColor=505050)](https://pkg.go.dev/github.com/thediveo/noleak)
+[![GitHub](https://img.shields.io/github/license/thediveo/noleak)](https://img.shields.io/github/license/thediveo/noleak)
+[![Go Report Card](https://goreportcard.com/badge/github.com/thediveo/noleak)](https://goreportcard.com/report/github.com/thediveo/noleak)
 
 `noleak` complements [Gomega](https://github.com/onsi/gomega) with goroutine
 discovery and leak matchers.
@@ -46,7 +52,7 @@ Users of the Gomega ecosystem are already experienced in arriving at conclusions
 and retrying temporarily failing expectations: Gomega does it in form of
 `Eventually().ShouldNot()`, and (without the trying aspect) with
 `Expect().NotTo()`. So what is missing is only a goroutine leak detector in form
-of the HaveLeaked matcher, as well as the ability to specify goroutine filters
+of the `HaveLeaked` matcher, as well as the ability to specify goroutine filters
 in order to sort out the non-leaking (and therefore expected) goroutines, using
 a few filter criteria. That is, a few new goroutine-related matchers. In this
 architecture, even existing Gomega matchers can optionally be (re)used as the
@@ -76,9 +82,9 @@ Eventually(Goroutines).ShouldNot(HaveLeaked(IgnoringGoroutines(snapshot)))
 
 ### Goroutine IDs
 
-In order to detect goroutine IDs, we use what is termed "goroutine IDs". These
-IDs appear in runtime stack ("backtrace") dumps. But … are these goroutine IDs
-even unambiguous? What are their "_guarantees_" (if there are _any_ at all)?
+In order to detect goroutine identities, we use what is termed "goroutine IDs".
+These IDs appear in runtime stack ("backtrace") dumps. But … are these goroutine
+IDs even unambiguous? What are their "_guarantees_" (if there are _any_ at all)?
 
 First, Go's runtime code uses the identifier (and thus term) [`goid` for
 Goroutine
