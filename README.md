@@ -1,7 +1,7 @@
-# `noleak`
+# 🌊 `noleak`
 
 `noleak` complements [Gomega](https://github.com/onsi/gomega) with goroutine
-discovery, as well as goroutine leak matchers.
+discovery and leak matchers.
 
 ## Usage
 
@@ -26,7 +26,6 @@ AfterEach(func() {
     Eventually(Goroutines).ShouldNot(HaveLeaked(snapshot))
 })
 ```
-
 
 ## Acknowledgement
 
@@ -72,7 +71,6 @@ Eventually(Goroutines).ShouldNot(HaveLeaked(IgnoringGoroutines(snapshot)))
 //   DoSomething()
 //   Expect(goleak.Find(opt)).NotTo(HaveOccured())
 ```
-
 
 ## Notes
 
