@@ -26,16 +26,27 @@ no one wants leaked goroutines.
 
 A typical pattern to detect goroutines leaked in tests is as follows:
 
-   var snapshot []goroutine.Goroutine
+  var snapshot []goroutine.Goroutine
 
-   BeforeEach(func() {
-	   snapshot = Goroutines()
-   })
+  BeforeEach(func() {
+    snapshot = Goroutines()
+  })
 
-   AfterEach(func() {
-	   // Note: it's "Goroutines", but not "Goroutines()", when using with Eventually!
-	   Eventually(Goroutines).ShouldNot(HaveLeaked(snapshot))
-   })
+  AfterEach(func() {
+    // Note: it's "Goroutines", but not "Goroutines()", when using with Eventually!
+    Eventually(Goroutines).ShouldNot(HaveLeaked(snapshot))
+  })
+
+Leak-Related Matchers
+
+Depending on the tests and dependency modules used, additional goroutines might
+need to be classified as being not leaks. The following
+
+  IgnoringTopFunction("foo.bar")                // exactly "foo.bar"
+  IgnoringTopFunction("foo.bar...")             // anything with prefix "foo.bar." (note the trailing dot!)
+  IgnoringTopFunction("foo.bar [chan receive]") // exactly "foo.bar" with state starting with "chan receive"
+  IgnoringGoroutines(expectedGoroutines)        // ignore specified goroutines with these IDs
+  IgnoringInBacktrace("foo.bar.baz")            // "foo.bar.baz" within the backtrace stack
 
 Acknowledgement
 

@@ -27,6 +27,12 @@ import (
 // standardFilters specifies the always automatically included no-leak goroutine
 // filter matchers.
 //
+// Note: it's okay to instantiate the Gomega Matchers here, as all goroutine
+// filtering-related noleak matchers are stateless with respect to any actual
+// value they try to match. This allows us to simply prepend them to any
+// user-supplied optional matchers when HaveLeaked returns a new goroutine
+// leakage detecting matcher.
+//
 // Note: cgo's goroutines with status "[syscall, locked to thread]" do not
 // appear any longer (since mid-2017), as these cgo goroutines are put into the
 // "dead" state when not in use. See: https://github.com/golang/go/issues/16714

@@ -1,6 +1,6 @@
 <!-- markdownlint-disable-next-line MD022 -->
 # `noleak`
-<img align="right" width="150" src="images/noleaky-small.png">
+<img title="Leakiee the gopher" align="right" width="150" src="images/noleaky-small.png">
 
 [![PkgGoDev](https://img.shields.io/badge/-reference-blue?logo=go&logoColor=white&labelColor=505050)](https://pkg.go.dev/github.com/thediveo/noleak)
 [![GitHub](https://img.shields.io/github/license/thediveo/noleak)](https://img.shields.io/github/license/thediveo/noleak)
@@ -37,7 +37,7 @@ AfterEach(func() {
 })
 ```
 
-## Acknowledgement
+## Credits
 
 `noleak` has been heavily inspired by [Uber's
 goleak](https://github.com/uber-go/goleak) goroutine leak detector. It's
@@ -84,6 +84,21 @@ Eventually(Goroutines).ShouldNot(HaveLeaked(IgnoringGoroutines(snapshot)))
 
 ## Notes
 
+### Go Version Support
+
+`noleak` supports versions of Go that are noted by the [Go release
+policy](https://golang.org/doc/devel/release.html#policy), that is, major
+versions _N_ and _N_-1 (where _N_ is the current major version).
+
+### Leakiee the Gopher
+
+Credit, where credit is due: our mascot _Leakiee_ clearly has been inspired by
+[Renee French's](http://reneefrench.blogspot.com/) (he of the _Go gopher_) work
+of art. But there's not only a father, but also a mother: Leakiee is the sibling
+to _Morby_, the "Incontinentainer" whale; which in turn has been inspired by
+[Laurel](https://bloglaurel.com/)'s beautiful _Moby Dock_ and friends artwork
+for Docker Inc.
+
 ### Goroutine IDs
 
 In order to detect goroutine identities, we use what is termed "goroutine IDs".
@@ -111,12 +126,6 @@ point of view: don't use goroutine IDs. He spells out good reasons for why you
 should not use them. However, obviously logging, debugging and testing looks
 like a valid exemption from his rule, not least `runtime.Stack` includes the
 `goids` for some reason.
-
-### Go Version Support
-
-`noleak` supports versions of Go that are noted by the [Go release
-policy](https://golang.org/doc/devel/release.html#policy), that is, major
-versions _N_ and _N_-1 (where _N_ is the current major version).
 
 ## ⚖️ Copyright and License
 
