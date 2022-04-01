@@ -30,18 +30,41 @@ const backtraceGoroutineHeader = "goroutine "
 // backtrace.
 const backtraceGoroutineHeaderLen = len(backtraceGoroutineHeader)
 
+// Beginning of line indicating the creator of a Goroutine, if any. This
+// indication is missing for the main goroutine as it appeared in a big bang or
+// something similar.
+const backtraceGoroutineCreator = "created by "
+
 // Goroutine represents information about a single goroutine.
 type Goroutine struct {
-	ID          uint64 // goroutine ID ("goid" in Go's runtime parlance)
-	State       string // goroutine state, such as "running"
-	TopFunction string // topmost function on goroutine's stack
-	Backtrace   string // goroutine's stack backtrace
+	ID              uint64 // goroutine ID ("goid" in Go's runtime parlance)
+	State           string // goroutine state, such as "running"
+	TopFunction     string // topmost function on goroutine's stack
+	CreatorFunction string // name of function creating this goroutine, if any
+	CreatorLocation string // location where the goroutine was created, if any; format "file-path:line-number"
+	Backtrace       string // goroutine's stack backtrace
 }
 
-// String returns a short textual description of this goroutine.
+// String returns a short textual description of this goroutine, but without the
+// potentially lengthy and ugly backtrace details.
 func (g Goroutine) String() string {
-	return fmt.Sprintf("Goroutine ID: %d, state: %s, top function: %s",
+	s := fmt.Sprintf("Goroutine ID: %d, state: %s, top function: %s",
 		g.ID, g.State, g.TopFunction)
+	if g.CreatorFunction == "" {
+		return s
+	}
+	s += fmt.Sprintf(", created by: %s, location: %s",
+		g.CreatorFunction, g.CreatorLocation)
+	return s
+}
+
+// GomegaString returns the Gomega struct representation of a Goroutine, but
+// without the potentially lengthy stack backtrace. This prevents ugly long and
+// potentially truncated Gomega object value dumps.
+func (g Goroutine) GomegaString() string {
+	return fmt.Sprintf(
+		"{ID: %d, State: %q, TopFunction: %q, CreatorFunction: %q, CreatorLocation: %q}",
+		g.ID, g.State, g.TopFunction, g.CreatorFunction, g.CreatorLocation)
 }
 
 // Goroutines returns information about all goroutines.
@@ -79,6 +102,7 @@ func parseStack(stacks []byte) []Goroutine {
 		g := new(line)
 		// Read the rest ... the backtrace
 		g.TopFunction, g.Backtrace = parseGoroutineStack(r)
+		g.CreatorFunction, g.CreatorLocation = findCreator(g.Backtrace)
 		gs = append(gs, g)
 	}
 
@@ -98,6 +122,32 @@ func new(s string) Goroutine {
 	}
 	state := strings.TrimSuffix(strings.TrimPrefix(fields[2], "["), "]")
 	return Goroutine{ID: id, State: state}
+}
+
+// findCreator solves the great mystery of Gokind, answering the question of who
+// created this goroutine? Given a stack backtrace, that is.
+func findCreator(backtrace string) (creator, location string) {
+	pos := strings.LastIndex(backtrace, backtraceGoroutineCreator)
+	if pos < 0 {
+		return
+	}
+	// Split the "created by ..." line from the following line giving us the
+	// (indented) file name:line number and the hex offset of the call location
+	// within the function.
+	details := strings.SplitN(backtrace[pos+len(backtraceGoroutineCreator):], "\n", 3)
+	if len(details) < 2 {
+		return
+	}
+	// Split off the call location hex offset which is of no use to us, and only
+	// keep the file path and line number information. This will be useful for
+	// diagnosis.
+	offsetpos := strings.LastIndex(details[1], " +")
+	if offsetpos < 0 {
+		return
+	}
+	location = strings.TrimSpace(details[1][:offsetpos])
+	creator = details[0]
+	return
 }
 
 // parseGoroutineStack reads from stack information from a reader until the next

@@ -46,7 +46,17 @@ main.main()
 			ID:          1234,
 			State:       "gone",
 			TopFunction: "gopher.hole",
-		}.String()).To(Equal("Goroutine ID: 1234, state: gone, top function: gopher.hole"))
+		}.String()).To(Equal(
+			"Goroutine ID: 1234, state: gone, top function: gopher.hole"))
+
+		Expect(Goroutine{
+			ID:              1234,
+			State:           "gone",
+			TopFunction:     "gopher.hole",
+			CreatorFunction: "google",
+			CreatorLocation: "/plan/10:2009",
+		}.String()).To(Equal(
+			"Goroutine ID: 1234, state: gone, top function: gopher.hole, created by: google, location: /plan/10:2009"))
 	})
 
 	Context("goroutine header", func() {
@@ -111,6 +121,50 @@ main.main()
 				HaveField("Backtrace", stack)))
 		})
 
+		It("finds its Creator", func() {
+			creator, location := findCreator(`
+goroutine 42 [chan receive]:
+main.foo.func1()
+		/home/foo/test.go:6 +0x28
+created by main.foo
+		/home/foo/test.go:5 +0x64
+`)
+			Expect(creator).To(Equal("main.foo"))
+			Expect(location).To(Equal("/home/foo/test.go:5"))
+		})
+
+		It("handles missing or invalid creator information", func() {
+			creator, location := findCreator("")
+			Expect(creator).To(BeEmpty())
+			Expect(location).To(BeEmpty())
+
+			creator, location = findCreator(`
+goroutine 42 [chan receive]:
+main.foo.func1()
+		/home/foo/test.go:6 +0x28
+created by`)
+			Expect(creator).To(BeEmpty())
+			Expect(location).To(BeEmpty())
+
+			creator, location = findCreator(`
+goroutine 42 [chan receive]:
+main.foo.func1()
+		/home/foo/test.go:6 +0x28
+created by main.foo`)
+			Expect(creator).To(BeEmpty())
+			Expect(location).To(BeEmpty())
+
+			creator, location = findCreator(`
+goroutine 42 [chan receive]:
+main.foo.func1()
+		/home/foo/test.go:6 +0x28
+created by main.foo
+		/home/foo/test.go:5
+`)
+			Expect(creator).To(BeEmpty())
+			Expect(location).To(BeEmpty())
+		})
+
 	})
 
 	Context("live", func() {
@@ -124,6 +178,16 @@ main.main()
 				HaveField("TopFunction", "github.com/thediveo/noleak/goroutine.stacks"),
 				HaveField("Backtrace", MatchRegexp(`github.com/thediveo/noleak/goroutine.stacks.*
 `))))
+		})
+
+		It("discovers a goroutine's creator", func() {
+			ch := make(chan Goroutine)
+			go func() {
+				ch <- Current()
+			}()
+			g := <-ch
+			Expect(g.CreatorFunction).NotTo(BeEmpty())
+			Expect(g.CreatorLocation).NotTo(BeEmpty())
 		})
 
 		It("discovers all goroutine information", func() {
