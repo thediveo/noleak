@@ -44,11 +44,11 @@ func G(actual interface{}, matchername string) (goroutine.Goroutine, error) {
 
 // goids returns a (sorted) list of Goroutine IDs in textual format.
 func goids(gs []goroutine.Goroutine) string {
-	ids := make([]int, len(gs))
+	ids := make([]uint64, len(gs))
 	for idx, g := range gs {
 		ids[idx] = g.ID
 	}
-	sort.Ints(ids)
+	sort.Sort(Uint64Slice(ids))
 	var buff strings.Builder
 	for idx, id := range ids {
 		if idx > 0 {
@@ -58,3 +58,11 @@ func goids(gs []goroutine.Goroutine) string {
 	}
 	return buff.String()
 }
+
+// Uint64Slice implements the sort.Interface for a []uint64 to sort in
+// increasing order.
+type Uint64Slice []uint64
+
+func (s Uint64Slice) Len() int           { return len(s) }
+func (s Uint64Slice) Less(a, b int) bool { return s[a] < s[b] }
+func (s Uint64Slice) Swap(a, b int)      { s[a], s[b] = s[b], s[a] }

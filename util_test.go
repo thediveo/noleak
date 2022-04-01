@@ -38,11 +38,11 @@ var _ = Describe("utilities", func() {
 			actual := goroutine.Goroutine{ID: 42}
 			g, err := G(actual, "foo")
 			Expect(err).NotTo(HaveOccurred())
-			Expect(g.ID).To(Equal(42))
+			Expect(g.ID).To(Equal(uint64(42)))
 
 			g, err = G(&actual, "foo")
 			Expect(err).NotTo(HaveOccurred())
-			Expect(g.ID).To(Equal(42))
+			Expect(g.ID).To(Equal(uint64(42)))
 		})
 
 	})

@@ -53,7 +53,7 @@ main.main()
 
 		It("parses goroutine header", func() {
 			g := new(header)
-			Expect(g.ID).To(Equal(666))
+			Expect(g.ID).To(Equal(uint64(666)))
 			Expect(g.State).To(Equal("running"))
 		})
 
@@ -105,7 +105,7 @@ main.main()
 			gs := parseStack([]byte(header + stack))
 			Expect(gs).To(HaveLen(1))
 			Expect(gs[0]).To(And(
-				HaveField("ID", 666),
+				HaveField("ID", uint64(666)),
 				HaveField("State", "running"),
 				HaveField("TopFunction", "runtime/debug.Stack"),
 				HaveField("Backtrace", stack)))

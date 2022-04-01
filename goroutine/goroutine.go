@@ -23,12 +23,16 @@ import (
 	"strings"
 )
 
-const goroutineHeader = "goroutine "
-const goroutineHeaderLen = len(goroutineHeader)
+// Beginning of header line introducing a (new) goroutine in a stack backtrace.
+const backtraceGoroutineHeader = "goroutine "
+
+// Length of the header line prefix introducing a (new) goroutine in a stack
+// backtrace.
+const backtraceGoroutineHeaderLen = len(backtraceGoroutineHeader)
 
 // Goroutine represents information about a single goroutine.
 type Goroutine struct {
-	ID          int    // goroutine ID
+	ID          uint64 // goroutine ID ("goid" in Go's runtime parlance)
 	State       string // goroutine state, such as "running"
 	TopFunction string // topmost function on goroutine's stack
 	Backtrace   string // goroutine's stack backtrace
@@ -88,7 +92,7 @@ func new(s string) Goroutine {
 	if len(fields) != 3 {
 		panic(fmt.Sprintf("invalid stack header: %q", s))
 	}
-	id, err := strconv.Atoi(fields[1])
+	id, err := strconv.ParseUint(fields[1], 10, 64)
 	if err != nil {
 		panic(fmt.Sprintf("invalid stack header ID: %q, header: %q", fields[1], s))
 	}
@@ -104,8 +108,8 @@ func parseGoroutineStack(r *bufio.Reader) (topF string, backtrace string) {
 	// Read stack information belonging to this goroutine until we meet
 	// another goroutine header.
 	for {
-		header, err := r.Peek(goroutineHeaderLen)
-		if string(header) == goroutineHeader {
+		header, err := r.Peek(backtraceGoroutineHeaderLen)
+		if string(header) == backtraceGoroutineHeader {
 			break
 		}
 		if err != nil && err != io.EOF {

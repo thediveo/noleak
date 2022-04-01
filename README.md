@@ -1,6 +1,6 @@
 <!-- markdownlint-disable-next-line MD022 -->
 # `noleak`
-<img align="right" src="images/noleaky-small.png">
+<img align="right" width="150" src="images/noleaky-small.png">
 
 [![PkgGoDev](https://img.shields.io/badge/-reference-blue?logo=go&logoColor=white&labelColor=505050)](https://pkg.go.dev/github.com/thediveo/noleak)
 [![GitHub](https://img.shields.io/github/license/thediveo/noleak)](https://img.shields.io/github/license/thediveo/noleak)
@@ -11,7 +11,9 @@ discovery and leak matchers.
 
 ## Usage
 
-`go get github.com/thediveo/noleak` (please notice the all-lower case import path)
+In your project (with a `go.mod`) run `go get github.com/thediveo/noleak` to get
+and install the latest stable release (please notice the all-lower case import
+path).
 
 ```go
 AfterEach(func() {
@@ -24,7 +26,7 @@ In case there are "background" goroutines from database drivers, container
 engine clients, et cetera:
 
 ```go
-var snapshot []Goroutine
+var snapshot []goroutine.Goroutine
 
 BeforeEach(func() {
     snapshot = Goroutines()

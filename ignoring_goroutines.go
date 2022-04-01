@@ -29,7 +29,7 @@ import (
 // goroutines.
 func IgnoringGoroutines(goroutines []goroutine.Goroutine) types.GomegaMatcher {
 	m := &ignoringGoroutinesMatcher{
-		ignoreGoids: map[int]struct{}{},
+		ignoreGoids: map[uint64]struct{}{},
 	}
 	for _, g := range goroutines {
 		m.ignoreGoids[g.ID] = struct{}{}
@@ -38,7 +38,7 @@ func IgnoringGoroutines(goroutines []goroutine.Goroutine) types.GomegaMatcher {
 }
 
 type ignoringGoroutinesMatcher struct {
-	ignoreGoids map[int]struct{}
+	ignoreGoids map[uint64]struct{}
 }
 
 // Match succeeds if actual is a goroutine.Goroutine and its ID is in the set of
@@ -65,11 +65,11 @@ func (matcher *ignoringGoroutinesMatcher) NegatedFailureMessage(actual interface
 }
 
 // expectedGoids returns the sorted list of expected goroutine IDs.
-func (matcher *ignoringGoroutinesMatcher) expectedGoids() []int {
-	ids := make([]int, 0, len(matcher.ignoreGoids))
+func (matcher *ignoringGoroutinesMatcher) expectedGoids() []uint64 {
+	ids := make([]uint64, 0, len(matcher.ignoreGoids))
 	for id := range matcher.ignoreGoids {
 		ids = append(ids, id)
 	}
-	sort.Ints(ids)
+	sort.Sort(Uint64Slice(ids))
 	return ids
 }
