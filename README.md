@@ -11,6 +11,8 @@ discovery and leak matchers.
 
 ## Usage
 
+`go get github.com/thediveo/noleak` (please notice the all-lower case import path)
+
 ```go
 AfterEach(func() {
     // Notice: Goroutines, not: Goroutines()
