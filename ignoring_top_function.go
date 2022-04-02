@@ -22,9 +22,9 @@ import (
 	"github.com/onsi/gomega/types"
 )
 
-// IgnoringTopFunction succeeds if the topmost function on the backtrace stack
-// of an actual goroutine has the specified function name, and optionally the
-// actual goroutine has the specified goroutine state.
+// IgnoringTopFunction succeeds if the topmost function in the backtrace of an
+// actual goroutine has the specified function name, and optionally the actual
+// goroutine has the specified goroutine state.
 //
 // The expected top function name s is either in the form of "topfunction-name",
 // "topfunction-name...", or "topfunction-name [state]".
@@ -65,9 +65,9 @@ type ignoringTopFunctionMatcher struct {
 	matchPrefix         bool
 }
 
-// Match succeeds if an actual goroutine's top function on the backtrace stack
-// matches the specified function name or function name prefix, or name and
-// goroutine state.
+// Match succeeds if an actual goroutine's top function in the backtrace matches
+// the specified function name or function name prefix, or name and goroutine
+// state.
 func (matcher *ignoringTopFunctionMatcher) Match(actual interface{}) (success bool, err error) {
 	g, err := G(actual, "IgnoringTopFunction")
 	if err != nil {
@@ -87,14 +87,14 @@ func (matcher *ignoringTopFunctionMatcher) Match(actual interface{}) (success bo
 
 // FailureMessage returns a failure message if the actual goroutine doesn't have
 // the specified function name/prefix (and optional state) at the top of the
-// backtrace stack.
+// backtrace.
 func (matcher *ignoringTopFunctionMatcher) FailureMessage(actual interface{}) (message string) {
 	return format.Message(actual, matcher.message())
 }
 
 // NegatedFailureMessage returns a failure message if the actual goroutine has
 // the specified function name/prefix (and optional state) at the top of the
-// backtrace stack.
+// backtrace.
 func (matcher *ignoringTopFunctionMatcher) NegatedFailureMessage(actual interface{}) (message string) {
 	return format.Message(actual, "not", matcher.message())
 }

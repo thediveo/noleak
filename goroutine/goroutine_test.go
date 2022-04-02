@@ -88,9 +88,9 @@ main.main()
 
 	})
 
-	Context("goroutine stack backtrace", func() {
+	Context("goroutine backtrace", func() {
 
-		It("parses goroutine's stack backtrace", func() {
+		It("parses goroutine's backtrace", func() {
 			r := bufio.NewReader(strings.NewReader(stack))
 			topF, backtrace := parseGoroutineBacktrace(r)
 			Expect(topF).To(Equal("runtime/debug.Stack"))
@@ -102,7 +102,7 @@ main.main()
 			Expect(backtrace).To(Equal(stack[:len(stack)-1]))
 		})
 
-		It("parses goroutine's stack backtrace until next goroutine header", func() {
+		It("parses goroutine's backtrace until next goroutine header", func() {
 			r := bufio.NewReader(strings.NewReader(stack + nextStack))
 			topF, backtrace := parseGoroutineBacktrace(r)
 			Expect(topF).To(Equal("runtime/debug.Stack"))
@@ -120,19 +120,19 @@ main.main()
 			Expect(func() {
 				parseGoroutineBacktrace(bufio.NewReader(
 					iotest.ErrReader(errors.New("foo failure"))))
-			}).To(PanicWith("parsing stack backtrace failed: foo failure"))
+			}).To(PanicWith("parsing backtrace failed: foo failure"))
 
 			Expect(func() {
 				parseGoroutineBacktrace(
 					bufio.NewReaderSize(
 						iotest.TimeoutReader(strings.NewReader(strings.Repeat("x", 32))),
 						16))
-			}).To(PanicWith("parsing stack backtrace failed: timeout"))
+			}).To(PanicWith("parsing backtrace failed: timeout"))
 
 			Expect(func() {
 				parseGoroutineBacktrace(bufio.NewReader(
 					iotest.ErrReader(io.ErrClosedPipe)))
-			}).To(PanicWith(MatchRegexp(`parsing stack backtrace failed: .*`)))
+			}).To(PanicWith(MatchRegexp(`parsing backtrace failed: .*`)))
 		})
 
 		It("parses goroutine information and stack", func() {

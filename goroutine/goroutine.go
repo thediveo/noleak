@@ -23,20 +23,21 @@ import (
 	"strings"
 )
 
-// Goroutine represents information about a single goroutine.
+// Goroutine represents information about a single goroutine, such as its unique
+// ID, state, backtrace, creator, and more.
 //
-// Go's runtime assigns unique IDs to goroutines, also called "goid"s in Go's
+// Go's runtime assigns unique IDs to goroutines, also called "goid" in Go
 // runtime parlance. These IDs start with 1 for the main goroutine and only
 // increase (unless you manage to create 2**64-2 goroutines during the lifetime
 // of your tests so that the goids wrap around). Due to runtime-internal
-// optimizations, not all IDs might be used, so that there are gaps. But IDs are
-// never reused, so they're fine as unique goroutine identities.
+// optimizations, not all IDs might be used, so that there might be gaps. But
+// IDs are never reused, so they're fine as unique goroutine identities.
 //
-// The size of goids is always 64bits, even on 32bit architectures (if you like,
-// you might want to double-check for yourself in runtime/runtime2.go and
+// The size of a goidsis always 64bits, even on 32bit architectures (if you
+// like, you might want to double-check for yourself in runtime/runtime2.go and
 // runtime/proc.go).
 //
-// A Goroutine's State starts with one of the following strings:
+// A Goroutine's State field starts with one of the following strings:
 //   - "idle"
 //   - "runnable"
 //   - "running"
@@ -45,7 +46,7 @@ import (
 //   - ("dead" ... these goroutines should never appear in dumps)
 //   - "copystack"
 //   - "preempted"
-//   - "???" ... if you ever come across this, something is severely broken.
+//   - ("???" ... something IS severely broken.)
 // In case a goroutine is in waiting state, the State field instead starts with
 // one of the following strings, never showing a lonely "waiting" string, but
 // rather one of the reasons for waiting:
@@ -214,13 +215,13 @@ func parseGoroutineBacktrace(r *bufio.Reader) (topFn string, backtrace string) {
 		if err != nil && err != io.EOF {
 			// There is some serious problem with the stack dump, so we
 			// decidedly panic now.
-			panic("parsing stack backtrace failed: " + err.Error())
+			panic("parsing backtrace failed: " + err.Error())
 		}
 		line, err := r.ReadString('\n')
 		if err != nil && err != io.EOF {
 			// There is some serious problem with the stack dump, so we
 			// decidedly panic now.
-			panic("parsing stack backtrace failed: " + err.Error())
+			panic("parsing backtrace failed: " + err.Error())
 		}
 		// The first line after a goroutine header lists the "topmost" function.
 		if topFn == "" {

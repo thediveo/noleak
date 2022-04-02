@@ -84,7 +84,7 @@ var standardFilters = []types.GomegaMatcher{
 //
 // In its simplest form, an expected non-leaky goroutine can be identified by
 // passing the (fully qualified) name (in form of a string) of the topmost
-// function on the backtrace stack. For instance:
+// function in the backtrace. For instance:
 //
 //   Eventually(Goroutines).ShouldNot(HaveLeaked("foo.bar"))
 //

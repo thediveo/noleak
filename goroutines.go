@@ -18,7 +18,7 @@ import "github.com/thediveo/noleak/goroutine"
 
 // Goroutines returns information about all goroutines: their goroutine IDs, the
 // names of the topmost functions in the backtraces, and finally the goroutine
-// stack backtraces.
+// backtraces.
 func Goroutines() []goroutine.Goroutine {
 	return goroutine.Goroutines()
 }

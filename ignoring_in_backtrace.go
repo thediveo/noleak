@@ -22,8 +22,8 @@ import (
 	"github.com/onsi/gomega/types"
 )
 
-// IgnoringInBacktrace succeeds if a function name is contained in the stack
-// backtrace of the actual goroutine description.
+// IgnoringInBacktrace succeeds if a function name is contained in the backtrace
+// of the actual goroutine description.
 func IgnoringInBacktrace(fname string) types.GomegaMatcher {
 	return &ignoringInBacktraceMatcher{fname: fname}
 }
@@ -32,8 +32,7 @@ type ignoringInBacktraceMatcher struct {
 	fname string
 }
 
-// Match succeeds if actual's stack backtrace contains the specified function
-// name.
+// Match succeeds if actual's backtrace contains the specified function name.
 func (matcher *ignoringInBacktraceMatcher) Match(actual interface{}) (success bool, err error) {
 	g, err := G(actual, "IgnoringInBacktrace")
 	if err != nil {
@@ -42,14 +41,14 @@ func (matcher *ignoringInBacktraceMatcher) Match(actual interface{}) (success bo
 	return strings.Contains(g.Backtrace, matcher.fname), nil
 }
 
-// FailureMessage returns a failure message if the actual's stack backtrace does
-// not contain the specified function name.
+// FailureMessage returns a failure message if the actual's backtrace does not
+// contain the specified function name.
 func (matcher *ignoringInBacktraceMatcher) FailureMessage(actual interface{}) (message string) {
-	return format.Message(actual, fmt.Sprintf("to contain %q in the goroutine's stack backtrace", matcher.fname))
+	return format.Message(actual, fmt.Sprintf("to contain %q in the goroutine's backtrace", matcher.fname))
 }
 
-// NegatedFailureMessage returns a failure message if the actual's stack
-// backtrace does contain the specified function name.
+// NegatedFailureMessage returns a failure message if the actual's backtrace
+// does contain the specified function name.
 func (matcher *ignoringInBacktraceMatcher) NegatedFailureMessage(actual interface{}) (message string) {
-	return format.Message(actual, fmt.Sprintf("not to contain %q in the goroutine's stack backtrace", matcher.fname))
+	return format.Message(actual, fmt.Sprintf("not to contain %q in the goroutine's backtrace", matcher.fname))
 }

@@ -46,7 +46,7 @@ need to be classified as being not leaks. The following
   IgnoringTopFunction("foo.bar...")             // anything with prefix "foo.bar." (note the trailing dot!)
   IgnoringTopFunction("foo.bar [chan receive]") // exactly "foo.bar" with state starting with "chan receive"
   IgnoringGoroutines(expectedGoroutines)        // ignore specified goroutines with these IDs
-  IgnoringInBacktrace("foo.bar.baz")            // "foo.bar.baz" within the backtrace stack
+  IgnoringInBacktrace("foo.bar.baz")            // "foo.bar.baz" within the backtrace
 
 Acknowledgement
 

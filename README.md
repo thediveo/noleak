@@ -102,8 +102,9 @@ for Docker Inc.
 ### Goroutine IDs
 
 In order to detect goroutine identities, we use what is termed "goroutine IDs".
-These IDs appear in runtime stack ("backtrace") dumps. But … are these goroutine
-IDs even unambiguous? What are their "_guarantees_" (if there are _any_ at all)?
+These IDs appear in runtime stack dumps ("backtraces"). But … are these
+goroutine IDs even unambiguous? What are their "_guarantees_" (if there are
+_any_ at all)?
 
 First, Go's runtime code uses the identifier (and thus term) [`goid` for
 Goroutine
