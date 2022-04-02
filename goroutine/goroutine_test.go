@@ -16,6 +16,7 @@ package goroutine
 
 import (
 	"bufio"
+	"errors"
 	"io"
 	"strings"
 	"sync"
@@ -57,6 +58,15 @@ main.main()
 			CreatorLocation: "/plan/10:2009",
 		}.String()).To(Equal(
 			"Goroutine ID: 1234, state: gone, top function: gopher.hole, created by: google, location: /plan/10:2009"))
+
+		Expect(Goroutine{
+			ID:              1234,
+			State:           "gone",
+			TopFunction:     "gopher.hole",
+			CreatorFunction: "google",
+			CreatorLocation: "/plan/10:2009",
+		}.GomegaString()).To(Equal(
+			"{ID: 1234, State: \"gone\", TopFunction: \"gopher.hole\", CreatorFunction: \"google\", CreatorLocation: \"/plan/10:2009\"}"))
 	})
 
 	Context("goroutine header", func() {
@@ -107,8 +117,22 @@ main.main()
 		})
 
 		It("panics on failing reader", func() {
-			r := bufio.NewReader(iotest.ErrReader(io.ErrClosedPipe))
-			Expect(func() { parseGoroutineBacktrace(r) }).To(PanicWith(MatchRegexp(`parsing stack backtrace failed: .*`)))
+			Expect(func() {
+				parseGoroutineBacktrace(bufio.NewReader(
+					iotest.ErrReader(errors.New("foo failure"))))
+			}).To(PanicWith("parsing stack backtrace failed: foo failure"))
+
+			Expect(func() {
+				parseGoroutineBacktrace(
+					bufio.NewReaderSize(
+						iotest.TimeoutReader(strings.NewReader(strings.Repeat("x", 32))),
+						16))
+			}).To(PanicWith("parsing stack backtrace failed: timeout"))
+
+			Expect(func() {
+				parseGoroutineBacktrace(bufio.NewReader(
+					iotest.ErrReader(io.ErrClosedPipe)))
+			}).To(PanicWith(MatchRegexp(`parsing stack backtrace failed: .*`)))
 		})
 
 		It("parses goroutine information and stack", func() {
