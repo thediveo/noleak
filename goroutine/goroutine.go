@@ -23,26 +23,60 @@ import (
 	"strings"
 )
 
-// Beginning of header line introducing a (new) goroutine in a stack backtrace.
-const backtraceGoroutineHeader = "goroutine "
-
-// Length of the header line prefix introducing a (new) goroutine in a stack
-// backtrace.
-const backtraceGoroutineHeaderLen = len(backtraceGoroutineHeader)
-
-// Beginning of line indicating the creator of a Goroutine, if any. This
-// indication is missing for the main goroutine as it appeared in a big bang or
-// something similar.
-const backtraceGoroutineCreator = "created by "
-
 // Goroutine represents information about a single goroutine.
+//
+// Go's runtime assigns unique IDs to goroutines, also called "goid"s in Go's
+// runtime parlance. These IDs start with 1 for the main goroutine and only
+// increase (unless you manage to create 2**64-2 goroutines during the lifetime
+// of your tests so that the goids wrap around). Due to runtime-internal
+// optimizations, not all IDs might be used, so that there are gaps. But IDs are
+// never reused, so they're fine as unique goroutine identities.
+//
+// The size of goids is always 64bits, even on 32bit architectures (if you like,
+// you might want to double-check for yourself in runtime/runtime2.go and
+// runtime/proc.go).
+//
+// A Goroutine's State starts with one of the following strings:
+//   - "idle"
+//   - "runnable"
+//   - "running"
+//   - "syscall"
+//   - ("waiting" ... see below)
+//   - ("dead" ... these goroutines should never appear in dumps)
+//   - "copystack"
+//   - "preempted"
+//   - "???" ... if you ever come across this, something is severely broken.
+// In case a goroutine is in waiting state, the State field instead starts with
+// one of the following strings, never showing a lonely "waiting" string, but
+// rather one of the reasons for waiting:
+//   - "chan receive"
+//   - "chan send"
+//   - "select"
+//   - "sleep"
+//   - "finalizer wait"
+//   - ...quite some more waiting states.
+//
+// The State description may next contain "(scan)", separated by a single blank
+// from the preceeding goroutine state text.
+//
+// If a goroutine is blocked from more than at least a minute, then the state
+// description next contains the string "X minutes", where X is the number of
+// minutes blocked. This text is separated by a "," and a blank from the
+// preceeding information.
+//
+// Finally, OS thread-locked goroutines finally contain "locked to thread" in
+// their State description, again separated by a "," and a blank from the
+// preceeding information.
+//
+// Please note that the State field never contains the opening and closing
+// square brackets as used in plain stack dumps.
 type Goroutine struct {
-	ID              uint64 // goroutine ID ("goid" in Go's runtime parlance)
+	ID              uint64 // unique goroutine ID ("goid" in Go's runtime parlance)
 	State           string // goroutine state, such as "running"
 	TopFunction     string // topmost function on goroutine's stack
 	CreatorFunction string // name of function creating this goroutine, if any
 	CreatorLocation string // location where the goroutine was created, if any; format "file-path:line-number"
-	Backtrace       string // goroutine's stack backtrace
+	Backtrace       string // goroutine's backtrace (of the stack)
 }
 
 // String returns a short textual description of this goroutine, but without the
@@ -59,8 +93,8 @@ func (g Goroutine) String() string {
 }
 
 // GomegaString returns the Gomega struct representation of a Goroutine, but
-// without the potentially lengthy stack backtrace. This prevents ugly long and
-// potentially truncated Gomega object value dumps.
+// without a potentially rather lengthy backtrace. This Gomega object value
+// dumps getting happily truncated as to become more or less useless.
 func (g Goroutine) GomegaString() string {
 	return fmt.Sprintf(
 		"{ID: %d, State: %q, TopFunction: %q, CreatorFunction: %q, CreatorLocation: %q}",
@@ -73,7 +107,8 @@ func Goroutines() []Goroutine {
 }
 
 // Current returns information about the current goroutine in which it is
-// called.
+// called. Please note that the topmost function name will always be
+// runtime.Stack.
 func Current() Goroutine {
 	return goroutines(false)[0]
 }
@@ -90,7 +125,6 @@ func goroutines(all bool) []Goroutine {
 // the dump.
 func parseStack(stacks []byte) []Goroutine {
 	gs := []Goroutine{}
-
 	r := bufio.NewReader(bytes.NewReader(stacks))
 	for {
 		// We expect a line describing a new "goroutine", everything else is a
@@ -100,16 +134,16 @@ func parseStack(stacks []byte) []Goroutine {
 			break
 		}
 		g := new(line)
-		// Read the rest ... the backtrace
-		g.TopFunction, g.Backtrace = parseGoroutineStack(r)
+		// Read the rest ... that is, the backtrace for this goroutine.
+		g.TopFunction, g.Backtrace = parseGoroutineBacktrace(r)
 		g.CreatorFunction, g.CreatorLocation = findCreator(g.Backtrace)
 		gs = append(gs, g)
 	}
-
 	return gs
 }
 
-// new takes a goroutine line from a stack dump and returns a Goroutine for it.
+// new takes a goroutine line from a stack dump and returns a Goroutine object
+// based on the information contained in the dump.
 func new(s string) Goroutine {
 	s = strings.TrimSuffix(s, ":\n")
 	fields := strings.SplitN(s, " ", 3)
@@ -124,8 +158,13 @@ func new(s string) Goroutine {
 	return Goroutine{ID: id, State: state}
 }
 
+// Beginning of line indicating the creator of a Goroutine, if any. This
+// indication is missing for the main goroutine as it appeared in a big bang or
+// something similar.
+const backtraceGoroutineCreator = "created by "
+
 // findCreator solves the great mystery of Gokind, answering the question of who
-// created this goroutine? Given a stack backtrace, that is.
+// created this goroutine? Given a backtrace, that is.
 func findCreator(backtrace string) (creator, location string) {
 	pos := strings.LastIndex(backtrace, backtraceGoroutineCreator)
 	if pos < 0 {
@@ -140,8 +179,8 @@ func findCreator(backtrace string) (creator, location string) {
 	}
 	// Split off the call location hex offset which is of no use to us, and only
 	// keep the file path and line number information. This will be useful for
-	// diagnosis.
-	offsetpos := strings.LastIndex(details[1], " +")
+	// diagnosis, when dumping leaked goroutines.
+	offsetpos := strings.LastIndex(details[1], " +0x")
 	if offsetpos < 0 {
 		return
 	}
@@ -150,39 +189,54 @@ func findCreator(backtrace string) (creator, location string) {
 	return
 }
 
-// parseGoroutineStack reads from stack information from a reader until the next
-// goroutine header is seen. The next goroutine header isn't consumed so that
-// the caller can still read the next header.
-func parseGoroutineStack(r *bufio.Reader) (topF string, backtrace string) {
-	stack := bytes.Buffer{}
-	// Read stack information belonging to this goroutine until we meet
+// Beginning of header line introducing a (new) goroutine in a backtrace.
+const backtraceGoroutineHeader = "goroutine "
+
+// Length of the header line prefix introducing a (new) goroutine in a
+// backtrace.
+const backtraceGoroutineHeaderLen = len(backtraceGoroutineHeader)
+
+// parseGoroutineBacktrace reads from reader r the backtrace information until
+// the end or until the next goroutine header is seen. This next goroutine
+// header is NOT consumed so that callers can still read the next header from
+// the reader.
+func parseGoroutineBacktrace(r *bufio.Reader) (topFn string, backtrace string) {
+	bt := bytes.Buffer{}
+	// Read backtrace information belonging to this goroutine until we meet
 	// another goroutine header.
 	for {
 		header, err := r.Peek(backtraceGoroutineHeaderLen)
 		if string(header) == backtraceGoroutineHeader {
+			// next goroutine header is up for read, so we're done with parsing
+			// the backtrace of this goroutine.
 			break
 		}
 		if err != nil && err != io.EOF {
+			// There is some serious problem with the stack dump, so we
+			// decidedly panic now.
 			panic("parsing stack backtrace failed: " + err.Error())
 		}
 		line, err := r.ReadString('\n')
 		if err != nil && err != io.EOF {
+			// There is some serious problem with the stack dump, so we
+			// decidedly panic now.
 			panic("parsing stack backtrace failed: " + err.Error())
 		}
 		// The first line after a goroutine header lists the "topmost" function.
-		if topF == "" {
+		if topFn == "" {
 			line := /*sic!*/ strings.TrimSpace(line)
 			idx := strings.LastIndex(line, "(")
 			if idx <= 0 {
 				panic(fmt.Sprintf("invalid function call stack entry: %q", line))
 			}
-			topF = line[:idx]
+			topFn = line[:idx]
 		}
-		// Always append the line to the goroutine's stack backtrace.
-		stack.WriteString(line)
+		// Always append the line read to the goroutine's backtrace.
+		bt.WriteString(line)
 		if err == io.EOF {
+			// we're reached the end of the stack dump, so that's it.
 			break
 		}
 	}
-	return topF, stack.String()
+	return topFn, bt.String()
 }

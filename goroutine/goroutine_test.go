@@ -82,19 +82,19 @@ main.main()
 
 		It("parses goroutine's stack backtrace", func() {
 			r := bufio.NewReader(strings.NewReader(stack))
-			topF, backtrace := parseGoroutineStack(r)
+			topF, backtrace := parseGoroutineBacktrace(r)
 			Expect(topF).To(Equal("runtime/debug.Stack"))
 			Expect(backtrace).To(Equal(stack))
 
 			r.Reset(strings.NewReader(stack[:len(stack)-1]))
-			topF, backtrace = parseGoroutineStack(r)
+			topF, backtrace = parseGoroutineBacktrace(r)
 			Expect(topF).To(Equal("runtime/debug.Stack"))
 			Expect(backtrace).To(Equal(stack[:len(stack)-1]))
 		})
 
 		It("parses goroutine's stack backtrace until next goroutine header", func() {
 			r := bufio.NewReader(strings.NewReader(stack + nextStack))
-			topF, backtrace := parseGoroutineStack(r)
+			topF, backtrace := parseGoroutineBacktrace(r)
 			Expect(topF).To(Equal("runtime/debug.Stack"))
 			Expect(backtrace).To(Equal(stack))
 		})
@@ -103,12 +103,12 @@ main.main()
 			r := bufio.NewReader(strings.NewReader(`main.main
 	/somewhere/prog.go:123 +0x666
 	`))
-			Expect(func() { parseGoroutineStack(r) }).To(PanicWith(MatchRegexp(`invalid function call stack entry: "main.main"`)))
+			Expect(func() { parseGoroutineBacktrace(r) }).To(PanicWith(MatchRegexp(`invalid function call stack entry: "main.main"`)))
 		})
 
 		It("panics on failing reader", func() {
 			r := bufio.NewReader(iotest.ErrReader(io.ErrClosedPipe))
-			Expect(func() { parseGoroutineStack(r) }).To(PanicWith(MatchRegexp(`parsing stack backtrace failed: .*`)))
+			Expect(func() { parseGoroutineBacktrace(r) }).To(PanicWith(MatchRegexp(`parsing stack backtrace failed: .*`)))
 		})
 
 		It("parses goroutine information and stack", func() {
@@ -186,7 +186,7 @@ created by main.foo
 				ch <- Current()
 			}()
 			g := <-ch
-			Expect(g.CreatorFunction).NotTo(BeEmpty())
+			Expect(g.CreatorFunction).NotTo(BeEmpty(), "no creator: %s", g.Backtrace)
 			Expect(g.CreatorLocation).NotTo(BeEmpty())
 		})
 
