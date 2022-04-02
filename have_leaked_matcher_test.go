@@ -28,6 +28,65 @@ import (
 
 var _ = Describe("HaveLeaked", func() {
 
+	It("renders indented goroutine information including (malformed) backtrace", func() {
+		gs := []goroutine.Goroutine{
+			{
+				ID:    42,
+				State: "stoned",
+				Backtrace: `main.foo.func1()
+		/home/foo/test.go:6 +0x28
+created by main.foo
+		/home/foo/test.go:5 +0x64
+`,
+			},
+		}
+		m := HaveLeaked().(*HaveLeakedMatcher)
+		Expect(m.listGoroutines(gs, 1)).To(Equal(`    goroutine 42 [stoned]
+        main.foo.func1() at /home/foo/test.go:6
+        created by main.foo at /home/foo/test.go:5`))
+
+		gs = []goroutine.Goroutine{
+			{
+				ID:    42,
+				State: "stoned",
+				Backtrace: `main.foo.func1()
+		/home/foo/test.go:6 +0x28
+created by main.foo
+		/home/foo/test.go:5 +0x64`,
+			},
+		}
+		Expect(m.listGoroutines(gs, 1)).To(Equal(`    goroutine 42 [stoned]
+        main.foo.func1() at /home/foo/test.go:6
+        created by main.foo at /home/foo/test.go:5`))
+
+		gs = []goroutine.Goroutine{
+			{
+				ID:    42,
+				State: "stoned",
+				Backtrace: `main.foo.func1()
+		/home/foo/test.go:6 +0x28
+created by main.foo
+		/home/foo/test.go:5`,
+			},
+		}
+		Expect(m.listGoroutines(gs, 1)).To(Equal(`    goroutine 42 [stoned]
+        main.foo.func1() at /home/foo/test.go:6
+        created by main.foo at /home/foo/test.go:5`))
+
+		gs = []goroutine.Goroutine{
+			{
+				ID:    42,
+				State: "stoned",
+				Backtrace: `main.foo.func1()
+		/home/foo/test.go:6 +0x28
+created by main.foo`,
+			},
+		}
+		Expect(m.listGoroutines(gs, 1)).To(Equal(`    goroutine 42 [stoned]
+        main.foo.func1() at /home/foo/test.go:6
+        created by main.foo`))
+	})
+
 	It("considers testing and runtime goroutines not to be leaks", func() {
 		Expect(Goroutines()).NotTo(HaveLeaked(), "should not find any leaks by default")
 	})
@@ -92,17 +151,20 @@ var _ = Describe("HaveLeaked", func() {
 			m := HaveLeaked(snapshot)
 			gs := Goroutines()
 			Expect(m.Match(gs)).To(BeTrue())
-			Expect(m.FailureMessage(gs)).To(MatchRegexp(
-				`Expected to leak goroutines:\n    Goroutine ID: \d+, state: .*, top function: .*`))
+			Expect(m.FailureMessage(gs)).To(MatchRegexp(`Expected to leak 1 goroutines:
+    goroutine \d+ \[.+\]
+        .* at .*:\d+
+        created by .* at .*:\d+`))
 		})
 
 		It("returns a negated failure message", func() {
 			m := HaveLeaked(snapshot)
 			gs := Goroutines()
 			Expect(m.Match(gs)).To(BeTrue())
-			Expect(m.NegatedFailureMessage(gs)).To(MatchRegexp(
-				`Expected not to leak goroutines:\n    Goroutine ID: \d+, state: .*, top function: .*`))
-
+			Expect(m.NegatedFailureMessage(gs)).To(MatchRegexp(`Expected not to leak 1 goroutines:
+    goroutine \d+ \[.+\]
+        .* at .*:\d+
+        created by .* at .*:\d+`))
 		})
 
 		When("things go wrong", func() {

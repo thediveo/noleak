@@ -137,6 +137,9 @@ func parseStack(stacks []byte) []Goroutine {
 		g := new(line)
 		// Read the rest ... that is, the backtrace for this goroutine.
 		g.TopFunction, g.Backtrace = parseGoroutineBacktrace(r)
+		if strings.HasSuffix(g.Backtrace, "\n\n") {
+			g.Backtrace = g.Backtrace[:len(g.Backtrace)-1]
+		}
 		g.CreatorFunction, g.CreatorLocation = findCreator(g.Backtrace)
 		gs = append(gs, g)
 	}

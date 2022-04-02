@@ -17,6 +17,7 @@ package noleak
 import (
 	"fmt"
 	"reflect"
+	"strconv"
 	"strings"
 
 	"github.com/onsi/gomega/format"
@@ -173,12 +174,12 @@ func (matcher *HaveLeakedMatcher) Match(actual interface{}) (success bool, err e
 
 // FailureMessage returns a failure message if there are leaked goroutines.
 func (matcher *HaveLeakedMatcher) FailureMessage(actual interface{}) (message string) {
-	return fmt.Sprintf("Expected to leak goroutines:\n%s", matcher.listGoroutines(matcher.leaked, 1))
+	return fmt.Sprintf("Expected to leak %d goroutines:\n%s", len(matcher.leaked), matcher.listGoroutines(matcher.leaked, 1))
 }
 
 // NegatedFailureMessage returns a negated failure message if there aren't any leaked goroutines.
 func (matcher *HaveLeakedMatcher) NegatedFailureMessage(actual interface{}) (message string) {
-	return fmt.Sprintf("Expected not to leak goroutines:\n%s", matcher.listGoroutines(matcher.leaked, 1))
+	return fmt.Sprintf("Expected not to leak %d goroutines:\n%s", len(matcher.leaked), matcher.listGoroutines(matcher.leaked, 1))
 }
 
 // listGoroutines returns a somewhat compact textual representation of the
@@ -187,9 +188,50 @@ func (matcher *HaveLeakedMatcher) NegatedFailureMessage(actual interface{}) (mes
 func (matcher *HaveLeakedMatcher) listGoroutines(gs []goroutine.Goroutine, indentation uint) string {
 	var buff strings.Builder
 	indent := strings.Repeat(format.Indent, int(indentation))
-	for _, g := range gs {
+	backtraceIdent := strings.Repeat(format.Indent, int(indentation+1))
+	for gidx, g := range gs {
+		if gidx > 0 {
+			buff.WriteRune('\n')
+		}
 		buff.WriteString(indent)
-		buff.WriteString(g.String())
+		buff.WriteString("goroutine ")
+		buff.WriteString(strconv.FormatUint(g.ID, 10))
+		buff.WriteString(" [")
+		buff.WriteString(g.State)
+		buff.WriteString("]\n")
+
+		backtrace := g.Backtrace
+		for backtrace != "" {
+			buff.WriteString(backtraceIdent)
+			// take the next two lines (function name and file name plus line
+			// number) and output them as a single indented line.
+			nlIdx := strings.IndexRune(backtrace, '\n')
+			if nlIdx < 0 {
+				// ...a dodgy single line
+				buff.WriteString(backtrace)
+				break
+			}
+			fname := backtrace[:nlIdx]
+			location := backtrace[nlIdx+1:]
+			nnlIdx := strings.IndexRune(location, '\n')
+			if nnlIdx >= 0 {
+				backtrace, location = location[nnlIdx+1:], location[:nnlIdx]
+			} else {
+				backtrace = "" // ...the next location line is missing
+			}
+			buff.WriteString(fname)
+			buff.WriteString(" at ")
+			location = strings.TrimSpace(location)
+			if offsetIdx := strings.LastIndexFunc(location,
+				func(r rune) bool { return r == ' ' }); offsetIdx >= 0 {
+				buff.WriteString(location[:offsetIdx])
+			} else {
+				buff.WriteString(location)
+			}
+			if backtrace != "" {
+				buff.WriteRune('\n')
+			}
+		}
 	}
 	return buff.String()
 }
