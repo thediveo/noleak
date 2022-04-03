@@ -36,9 +36,9 @@ var _ = Describe("IgnoringInBacktrace matcher", func() {
 	It("returns failure messages", func() {
 		m := IgnoringInBacktrace("foo.bar")
 		Expect(m.FailureMessage(goroutine.Goroutine{Backtrace: "abc"})).To(MatchRegexp(
-			`Expected\n    <goroutine.Goroutine>: {ID: 0, State: "", TopFunction: "", CreatorFunction: "", CreatorLocation: ""}\nto contain "foo.bar" in the goroutine's backtrace`))
+			`Expected\n    <goroutine.Goroutine>: {ID: 0, State: "", TopFunction: "", CreatorFunction: "", BornAt: ""}\nto contain "foo.bar" in the goroutine's backtrace`))
 		Expect(m.NegatedFailureMessage(goroutine.Goroutine{Backtrace: "abc"})).To(MatchRegexp(
-			`Expected\n    <goroutine.Goroutine>: {ID: 0, State: "", TopFunction: "", CreatorFunction: "", CreatorLocation: ""}\nnot to contain "foo.bar" in the goroutine's backtrace`))
+			`Expected\n    <goroutine.Goroutine>: {ID: 0, State: "", TopFunction: "", CreatorFunction: "", BornAt: ""}\nnot to contain "foo.bar" in the goroutine's backtrace`))
 	})
 
 })

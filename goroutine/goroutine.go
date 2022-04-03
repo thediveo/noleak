@@ -76,7 +76,7 @@ type Goroutine struct {
 	State           string // goroutine state, such as "running"
 	TopFunction     string // topmost function on goroutine's stack
 	CreatorFunction string // name of function creating this goroutine, if any
-	CreatorLocation string // location where the goroutine was created, if any; format "file-path:line-number"
+	BornAt          string // location where the goroutine was started from, if any; format "file-path:line-number"
 	Backtrace       string // goroutine's backtrace (of the stack)
 }
 
@@ -88,8 +88,8 @@ func (g Goroutine) String() string {
 	if g.CreatorFunction == "" {
 		return s
 	}
-	s += fmt.Sprintf(", created by: %s, location: %s",
-		g.CreatorFunction, g.CreatorLocation)
+	s += fmt.Sprintf(", created by: %s, at: %s",
+		g.CreatorFunction, g.BornAt)
 	return s
 }
 
@@ -98,8 +98,8 @@ func (g Goroutine) String() string {
 // dumps getting happily truncated as to become more or less useless.
 func (g Goroutine) GomegaString() string {
 	return fmt.Sprintf(
-		"{ID: %d, State: %q, TopFunction: %q, CreatorFunction: %q, CreatorLocation: %q}",
-		g.ID, g.State, g.TopFunction, g.CreatorFunction, g.CreatorLocation)
+		"{ID: %d, State: %q, TopFunction: %q, CreatorFunction: %q, BornAt: %q}",
+		g.ID, g.State, g.TopFunction, g.CreatorFunction, g.BornAt)
 }
 
 // Goroutines returns information about all goroutines.
@@ -140,7 +140,7 @@ func parseStack(stacks []byte) []Goroutine {
 		if strings.HasSuffix(g.Backtrace, "\n\n") {
 			g.Backtrace = g.Backtrace[:len(g.Backtrace)-1]
 		}
-		g.CreatorFunction, g.CreatorLocation = findCreator(g.Backtrace)
+		g.CreatorFunction, g.BornAt = findCreator(g.Backtrace)
 		gs = append(gs, g)
 	}
 	return gs

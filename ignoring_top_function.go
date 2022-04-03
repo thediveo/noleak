@@ -26,36 +26,36 @@ import (
 // actual goroutine has the specified function name, and optionally the actual
 // goroutine has the specified goroutine state.
 //
-// The expected top function name s is either in the form of "topfunction-name",
-// "topfunction-name...", or "topfunction-name [state]".
+// The expected top function name topfn is either in the form of
+// "topfunction-name", "topfunction-name...", or "topfunction-name [state]".
 //
 // An ellipsis "..." after a topfunction-name matches any goroutine's top
 // function name if topfunction-name is a prefix and the goroutine's top
-// function name is at least one level more deep. For instance, "foo.bar..."
+// function name is at least one level deeper. For instance, "foo.bar..."
 // matches "foo.bar.baz", but doesn't match "foo.bar".
 //
 // If the optional expected state is specified, then a goroutine's state needs
 // to start with this expected state text. For instance, "foo.bar [running]"
 // matches a goroutine where the name of the top function is "foo.bar" and the
 // goroutine's state starts with "running".
-func IgnoringTopFunction(topfn string) types.GomegaMatcher {
-	if brIndex := strings.Index(topfn, "["); brIndex >= 0 {
-		expectedState := strings.Trim(topfn[brIndex:], "[]")
-		expectedTopFunction := strings.Trim(topfn[:brIndex], " ")
+func IgnoringTopFunction(topfname string) types.GomegaMatcher {
+	if brIndex := strings.Index(topfname, "["); brIndex >= 0 {
+		expectedState := strings.Trim(topfname[brIndex:], "[]")
+		expectedTopFunction := strings.Trim(topfname[:brIndex], " ")
 		return &ignoringTopFunctionMatcher{
 			expectedTopFunction: expectedTopFunction,
 			expectedState:       expectedState,
 		}
 	}
-	if strings.HasSuffix(topfn, "...") {
-		expectedTopFunction := topfn[:len(topfn)-3+1] // ...one trailing dot still expected
+	if strings.HasSuffix(topfname, "...") {
+		expectedTopFunction := topfname[:len(topfname)-3+1] // ...one trailing dot still expected
 		return &ignoringTopFunctionMatcher{
 			expectedTopFunction: expectedTopFunction,
 			matchPrefix:         true,
 		}
 	}
 	return &ignoringTopFunctionMatcher{
-		expectedTopFunction: topfn,
+		expectedTopFunction: topfname,
 	}
 }
 
@@ -96,7 +96,7 @@ func (matcher *ignoringTopFunctionMatcher) FailureMessage(actual interface{}) (m
 // the specified function name/prefix (and optional state) at the top of the
 // backtrace.
 func (matcher *ignoringTopFunctionMatcher) NegatedFailureMessage(actual interface{}) (message string) {
-	return format.Message(actual, "not", matcher.message())
+	return format.Message(actual, "not "+matcher.message())
 }
 
 func (matcher *ignoringTopFunctionMatcher) message() string {

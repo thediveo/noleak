@@ -7,7 +7,7 @@ Basics of noleak
 
 To start with,
 
-  Goroutines()
+    Goroutines()
 
 returns information about all (non-dead) goroutines at a particular moment. This
 is useful to capture a known correct snapshot and then later taking a new
@@ -15,52 +15,73 @@ snapshot and comparing these two snapshots for leaked goroutines.
 
 Next, the matcher
 
-  HaveLeaked()
+    HaveLeaked(...)
 
-filters out well-known and expected goroutines from an actual list of goroutines
-(passed from Eventually or Expect), hopefully ending up with an empty list of
-leaked goroutines. If there are still goroutines left after filtering out the
-well-known and expected goroutines, then HaveLeaked() will succeed. Which
-actually is usually considered to be failure, so rather to be "suckcess" because
-no one wants leaked goroutines.
+filters out well-known and expected "non-leaky" goroutines from an actual list
+of goroutines (passed from Eventually or Expect), hopefully ending up with an
+empty list of leaked goroutines. If there are still goroutines left after
+filtering, then HaveLeaked() will succeed ... which usually is actually
+considered to be failure. So, this can be rather declared to be "suckcess"
+because no one wants leaked goroutines.
 
-A typical pattern to detect goroutines leaked in tests is as follows:
+A typical pattern to detect goroutines leaked in individual tests is as follows:
 
-  var snapshot []goroutine.Goroutine
+    var ignoreGood []goroutine.Goroutine
 
-  BeforeEach(func() {
-    snapshot = Goroutines()
-  })
+    BeforeEach(func() {
+        ignoreGood = Goroutines()
+    })
 
-  AfterEach(func() {
-    // Note: it's "Goroutines", but not "Goroutines()", when using with Eventually!
-    Eventually(Goroutines).ShouldNot(HaveLeaked(snapshot))
-  })
+    AfterEach(func() {
+        // Note: it's "Goroutines", but not "Goroutines()", when using with Eventually!
+        Eventually(Goroutines).ShouldNot(HaveLeaked(ignoreGood))
+    })
+
+Using Eventually instead of Expect ensures that there is some time given for
+temporary goroutines to finally wind down. Gomega's default values apply: the 1s
+timeout and 10ms polling interval.
+
+Please note that the form
+
+    HaveLeaked(ignoreGood)
+
+is the same as the slightly longer, but also more expressive variant:
+
+    HaveLeaked(IgnoringGoroutines(ignoreGood))
 
 Leak-Related Matchers
 
-Depending on the tests and dependency modules used, additional goroutines might
-need to be classified as being not leaks. The following
+Depending on your tests and the dependencies used, you might need to identify
+additional goroutines as not being leaks. The noleak packages comes with the
+following predefined goroutine "filter" matchers that can be specified as
+arguments to HaveLeaked(...):
 
-  IgnoringTopFunction("foo.bar")                // exactly "foo.bar"
-  IgnoringTopFunction("foo.bar...")             // anything with prefix "foo.bar." (note the trailing dot!)
-  IgnoringTopFunction("foo.bar [chan receive]") // exactly "foo.bar" with state starting with "chan receive"
-  IgnoringGoroutines(expectedGoroutines)        // ignore specified goroutines with these IDs
-  IgnoringInBacktrace("foo.bar.baz")            // "foo.bar.baz" within the backtrace
+    IgnoringTopFunction("foo.bar")                // exactly "foo.bar"
+    IgnoringTopFunction("foo.bar...")             // top function name with prefix "foo.bar." (note the trailing dot!)
+    IgnoringTopFunction("foo.bar [chan receive]") // exactly "foo.bar" with state starting with "chan receive"
+    IgnoringGoroutines(expectedGoroutines)        // ignore specified goroutines with these IDs
+    IgnoringInBacktrace("foo.bar.baz")            // "foo.bar.baz" within the backtrace
+    IgnoringCreator("foo.bar")                    // exact creator function name "foo.bar"
+    IgnoringCreator("foo.bar...")                 // creator function name with prefix "foo.bar."
+
+In addition, you can use any other GomegaMatcher, as long as it can work on a
+(single) goroutine.Goroutine. For instance, Gomega's HaveField and WithTransform
+matchers are good foundations for writing project-specific noleak matchers.
 
 Acknowledgement
 
 noleak has been heavily inspired by the Goroutine leak detector
-github.com/uber-go/goleak. It's definitely a fine piece of work!
+github.com/uber-go/goleak. That's definitely a fine piece of work!
 
-But in the end, we had to decide against trying to hammering down uber-go/goleak
-into the Gomega TDD matcher ecosystem, because reusing and wrapping would have
-become very awkward. The main reason is that goleak.Find combines all the
+But then why another goroutine leak package? After a deep analysis of Uber's
+goleak we decided against crunching goleak somehow half-assed into the Gomega
+TDD matcher ecosystem. In particular, reusing and wrapping of the existing Uber
+implementation would have become very awkward: goleak.Find combines all the
 different elements of getting actual goroutines information, filtering them,
-arriving at a leak conclusion, and even retrying multiple times in one single
-exported function. Unfortunately, goleak makes gathering information about all
-goroutines an internal matter, so we cannot reuse such functionality elsewhere
-outside goleak.Find.
+arriving at a leak conclusion, and even retrying multiple times all in just one
+single exported function. Unfortunately, goleak makes gathering information
+about all goroutines an internal matter, so we cannot reuse such functionality
+elsewhere.
 
 Users of the Gomega ecosystem are already experienced in arriving at conclusions
 and retrying temporarily failing expectations: Gomega does it in form of

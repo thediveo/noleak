@@ -9,11 +9,10 @@
 `noleak` complements [Gomega](https://github.com/onsi/gomega) with goroutine
 discovery and leak matchers.
 
-## Usage
+## Basic Usage
 
 In your project (with a `go.mod`) run `go get github.com/thediveo/noleak` to get
-and install the latest stable release (please notice the all-lower case import
-path).
+and install the latest stable release.
 
 ```go
 AfterEach(func() {
@@ -23,34 +22,38 @@ AfterEach(func() {
 ```
 
 In case there are "background" goroutines from database drivers, container
-engine clients, et cetera:
+engine clients, et cetera, you can take a "snapshot" of good goroutines before
+each test and then afterwards filter out the known good goroutines:
 
 ```go
-var snapshot []goroutine.Goroutine
+var ignoreGood []goroutine.Goroutine
 
 BeforeEach(func() {
-    snapshot = Goroutines()
+    ignoreGood = Goroutines()
 })
 
 AfterEach(func() {
-    Eventually(Goroutines).ShouldNot(HaveLeaked(snapshot))
+    Eventually(Goroutines).ShouldNot(HaveLeaked(ignoreGood))
 })
 ```
+
+For more details, please refer to the [noleak package documentation](https://pkg.go.dev/github.com/thediveo/noleak).
 
 ## Credits
 
 `noleak` has been heavily inspired by [Uber's
-goleak](https://github.com/uber-go/goleak) goroutine leak detector. It's
+goleak](https://github.com/uber-go/goleak) goroutine leak detector. That's
 definitely a fine piece of work!
 
-But in the end, we had to decide against trying to hammering down
-`@uber-go/goleak` into the Gomega TDD matcher ecosystem, because reusing and
-wrapping would have become very awkward. The main reason is that `goleak.Find`
-combines all the different elements of getting actual goroutines information,
-filtering them, arriving at a leak conclusion, and even retrying multiple times
-in one single exported function. Unfortunately, goleak makes gathering
-information about all goroutines an internal matter, so we cannot reuse such
-functionality elsewhere outside `goleak.Find`.
+But then why another goroutine leak package? After a deep analysis of Uber's
+`goleak` we decided against crunching goleak somehow half-assed into the Gomega
+TDD matcher ecosystem. In particular, reusing and wrapping of the existing Uber
+implementation would have become very awkward: `goleak.Find` combines all the
+different elements of getting actual goroutines information, filtering them,
+arriving at a leak conclusion, and even retrying multiple times all in just one
+single exported function. Unfortunately, `goleak` makes gathering information
+about all goroutines an internal matter, so we cannot reuse such functionality
+elsewhere.
 
 Users of the Gomega ecosystem are already experienced in arriving at conclusions
 and retrying temporarily failing expectations: Gomega does it in form of
@@ -66,17 +69,17 @@ In the end, we now can fluently write in typical Gomega style and when
 dot-importing `noleak`:
 
 ```go
+// goleak: Expect(goleak.Find()).NotTo(HaveOccured())
 Eventually(Goroutines).ShouldNot(HaveLeaked())
-// before: Expect(goleak.Find()).NotTo(HaveOccured())
 ```
 
 Or when ignoring "non-standard" background goroutines:
 
 ```go
-snapshot := Goroutine()
+ignoreGood := Goroutine()
 DoSomething()
-Eventually(Goroutines).ShouldNot(HaveLeaked(IgnoringGoroutines(snapshot)))
-// before:
+Eventually(Goroutines).ShouldNot(HaveLeaked(ignoreGood))
+// goleak:
 //   opt := goleak.IgnoreCurrent()
 //   DoSomething()
 //   Expect(goleak.Find(opt)).NotTo(HaveOccured())

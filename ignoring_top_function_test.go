@@ -50,7 +50,7 @@ var _ = Describe("IgnoringTopFunction matcher", func() {
 		})).To(BeFalse())
 	})
 
-	It("matches a toplevel function by prefix", func() {
+	It("matches a toplevel function by name and state prefix", func() {
 		m := IgnoringTopFunction("foo.bar [worried]")
 		Expect(m.Match(goroutine.Goroutine{
 			TopFunction: "foo.bar",
@@ -65,17 +65,17 @@ var _ = Describe("IgnoringTopFunction matcher", func() {
 	It("returns failure messages", func() {
 		m := IgnoringTopFunction("foo.bar")
 		Expect(m.FailureMessage(goroutine.Goroutine{ID: 42, TopFunction: "foo"})).To(Equal(
-			"Expected\n    <goroutine.Goroutine>: {ID: 42, State: \"\", TopFunction: \"foo\", CreatorFunction: \"\", CreatorLocation: \"\"}\nto have the topmost function \"foo.bar\""))
+			"Expected\n    <goroutine.Goroutine>: {ID: 42, State: \"\", TopFunction: \"foo\", CreatorFunction: \"\", BornAt: \"\"}\nto have the topmost function \"foo.bar\""))
 		Expect(m.NegatedFailureMessage(goroutine.Goroutine{ID: 42, TopFunction: "foo"})).To(Equal(
-			"Expected\n    <goroutine.Goroutine>: {ID: 42, State: \"\", TopFunction: \"foo\", CreatorFunction: \"\", CreatorLocation: \"\"}\nnot\n    <string>: to have the topmost function \"foo.bar\""))
+			"Expected\n    <goroutine.Goroutine>: {ID: 42, State: \"\", TopFunction: \"foo\", CreatorFunction: \"\", BornAt: \"\"}\nnot to have the topmost function \"foo.bar\""))
 
 		m = IgnoringTopFunction("foo.bar [worried]")
 		Expect(m.FailureMessage(goroutine.Goroutine{ID: 42, TopFunction: "foo"})).To(Equal(
-			"Expected\n    <goroutine.Goroutine>: {ID: 42, State: \"\", TopFunction: \"foo\", CreatorFunction: \"\", CreatorLocation: \"\"}\nto have the topmost function \"foo.bar\" and the state \"worried\""))
+			"Expected\n    <goroutine.Goroutine>: {ID: 42, State: \"\", TopFunction: \"foo\", CreatorFunction: \"\", BornAt: \"\"}\nto have the topmost function \"foo.bar\" and the state \"worried\""))
 
 		m = IgnoringTopFunction("foo...")
 		Expect(m.FailureMessage(goroutine.Goroutine{ID: 42, TopFunction: "foo"})).To(Equal(
-			"Expected\n    <goroutine.Goroutine>: {ID: 42, State: \"\", TopFunction: \"foo\", CreatorFunction: \"\", CreatorLocation: \"\"}\nto have the prefix \"foo.\" for its topmost function"))
+			"Expected\n    <goroutine.Goroutine>: {ID: 42, State: \"\", TopFunction: \"foo\", CreatorFunction: \"\", BornAt: \"\"}\nto have the prefix \"foo.\" for its topmost function"))
 	})
 
 })

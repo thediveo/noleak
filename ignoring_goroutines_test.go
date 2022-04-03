@@ -40,9 +40,9 @@ var _ = Describe("IgnoringGoroutines matcher", func() {
 	It("returns failure messages", func() {
 		m := IgnoringGoroutines(Goroutines())
 		Expect(m.FailureMessage(goroutine.Goroutine{})).To(MatchRegexp(
-			`Expected\n    <goroutine.Goroutine>: {ID: 0, State: "", TopFunction: "", CreatorFunction: "", CreatorLocation: ""}\nto be contained in the list of expected goroutine IDs\n    <\[\]uint64 | len:\d+, cap:\d+>: [.*]`))
+			`Expected\n    <goroutine.Goroutine>: {ID: 0, State: "", TopFunction: "", CreatorFunction: "", BornAt: ""}\nto be contained in the list of expected goroutine IDs\n    <\[\]uint64 | len:\d+, cap:\d+>: [.*]`))
 		Expect(m.NegatedFailureMessage(goroutine.Goroutine{})).To(MatchRegexp(
-			`Expected\n    <goroutine.Goroutine>: {ID: 0, State: "", TopFunction: "", CreatorFunction: "", CreatorLocation: ""}\nnot to be contained in the list of expected goroutine IDs\n    <\[\]uint64 | len:\d+, cap:\d+>: [.*]`))
+			`Expected\n    <goroutine.Goroutine>: {ID: 0, State: "", TopFunction: "", CreatorFunction: "", BornAt: ""}\nnot to be contained in the list of expected goroutine IDs\n    <\[\]uint64 | len:\d+, cap:\d+>: [.*]`))
 	})
 
 })

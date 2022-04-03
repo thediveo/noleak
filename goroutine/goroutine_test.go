@@ -55,18 +55,18 @@ main.main()
 			State:           "gone",
 			TopFunction:     "gopher.hole",
 			CreatorFunction: "google",
-			CreatorLocation: "/plan/10:2009",
+			BornAt:          "/plan/10:2009",
 		}.String()).To(Equal(
-			"Goroutine ID: 1234, state: gone, top function: gopher.hole, created by: google, location: /plan/10:2009"))
+			"Goroutine ID: 1234, state: gone, top function: gopher.hole, created by: google, at: /plan/10:2009"))
 
 		Expect(Goroutine{
 			ID:              1234,
 			State:           "gone",
 			TopFunction:     "gopher.hole",
 			CreatorFunction: "google",
-			CreatorLocation: "/plan/10:2009",
+			BornAt:          "/plan/10:2009",
 		}.GomegaString()).To(Equal(
-			"{ID: 1234, State: \"gone\", TopFunction: \"gopher.hole\", CreatorFunction: \"google\", CreatorLocation: \"/plan/10:2009\"}"))
+			"{ID: 1234, State: \"gone\", TopFunction: \"gopher.hole\", CreatorFunction: \"google\", BornAt: \"/plan/10:2009\"}"))
 	})
 
 	Context("goroutine header", func() {
@@ -211,7 +211,7 @@ created by main.foo
 			}()
 			g := <-ch
 			Expect(g.CreatorFunction).NotTo(BeEmpty(), "no creator: %s", g.Backtrace)
-			Expect(g.CreatorLocation).NotTo(BeEmpty())
+			Expect(g.BornAt).NotTo(BeEmpty())
 		})
 
 		It("discovers all goroutine information", func() {
