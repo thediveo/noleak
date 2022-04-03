@@ -58,16 +58,16 @@ import (
 //   - ...quite some more waiting states.
 //
 // The State description may next contain "(scan)", separated by a single blank
-// from the preceeding goroutine state text.
+// from the preceding goroutine state text.
 //
 // If a goroutine is blocked from more than at least a minute, then the state
 // description next contains the string "X minutes", where X is the number of
 // minutes blocked. This text is separated by a "," and a blank from the
-// preceeding information.
+// preceding information.
 //
 // Finally, OS thread-locked goroutines finally contain "locked to thread" in
 // their State description, again separated by a "," and a blank from the
-// preceeding information.
+// preceding information.
 //
 // Please note that the State field never contains the opening and closing
 // square brackets as used in plain stack dumps.
