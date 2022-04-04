@@ -16,6 +16,8 @@ package noleak
 
 import (
 	"fmt"
+	"path"
+	"path/filepath"
 	"reflect"
 	"strconv"
 	"strings"
@@ -24,6 +26,20 @@ import (
 	"github.com/onsi/gomega/types"
 	"github.com/thediveo/noleak/goroutine"
 )
+
+// ReportFilenameWithPath controls whether to show call locations in leak
+// reports by default in abbreviated form with only source code filename with
+// package name and line number, or alternatively with source code filename with
+// path and line number.
+//
+// That is, with ReportFilenameWithPath==false:
+//
+//      foo/bar.go:123
+//
+// Or with ReportFilenameWithPath==true:
+//
+//      /home/goworld/coolprojects/mymodule/foo/bar.go:123
+var ReportFilenameWithPath = false
 
 // standardFilters specifies the always automatically included no-leak goroutine
 // filter matchers.
@@ -211,7 +227,10 @@ func (matcher *HaveLeakedMatcher) listGoroutines(gs []goroutine.Goroutine, inden
 				buff.WriteString(backtrace)
 				break
 			}
-			fname := backtrace[:nlIdx]
+			calledFuncName := backtrace[:nlIdx]
+			// Take care of not mangling the optional "created by " prefix is
+			// present, when formatting the location to use either long or
+			// shortened filenames and paths.
 			location := backtrace[nlIdx+1:]
 			nnlIdx := strings.IndexRune(location, '\n')
 			if nnlIdx >= 0 {
@@ -219,9 +238,20 @@ func (matcher *HaveLeakedMatcher) listGoroutines(gs []goroutine.Goroutine, inden
 			} else {
 				backtrace = "" // ...the next location line is missing
 			}
-			buff.WriteString(fname)
+			// Don't accidentally strip off the "created by" prefix when
+			// shortening the call site location filename...
+			location = strings.TrimSpace(location) // strip of indentation
+			lineno := ""
+			if linenoIdx := strings.LastIndex(location, ":"); linenoIdx >= 0 {
+				location, lineno = location[:linenoIdx], location[linenoIdx+1:]
+			}
+			location = formatFilename(location) + ":" + lineno
+			// Add to compact backtrace
+			buff.WriteString(calledFuncName)
 			buff.WriteString(" at ")
-			location = strings.TrimSpace(location)
+			// Don't output any program counter hex offsets, so strip them out
+			// here, if present; well, they should always be present, but better
+			// safe than sorry.
 			if offsetIdx := strings.LastIndexFunc(location,
 				func(r rune) bool { return r == ' ' }); offsetIdx >= 0 {
 				buff.WriteString(location[:offsetIdx])
@@ -264,4 +294,24 @@ nextgoroutine:
 		gs = append(gs, g)
 	}
 	return gs, nil
+}
+
+// formatFilename takes the ReportFilenameWithPath setting into account to
+// either return the full specified filename with a path or alternatively
+// shortening it to contain only the package name and the filename, but not the
+// full path.
+func formatFilename(filename string) string {
+	if ReportFilenameWithPath {
+		return filename
+	}
+	dir := filepath.Dir(filename)
+	pkg := filepath.Base(dir)
+	switch pkg {
+	case ".", "..", "/", "\\":
+		pkg = ""
+	}
+	// Go dumps stacks always with file locations containing forward slashes,
+	// even on Windows. Thus, we do NOT use filepath.Join here, but instead
+	// path.Join in order to keep with using forward slashes.
+	return path.Join(pkg, filepath.ToSlash(filepath.Base(filename)))
 }

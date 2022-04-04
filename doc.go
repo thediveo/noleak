@@ -68,6 +68,24 @@ In addition, you can use any other GomegaMatcher, as long as it can work on a
 (single) goroutine.Goroutine. For instance, Gomega's HaveField and WithTransform
 matchers are good foundations for writing project-specific noleak matchers.
 
+Leaked Goroutine Dump
+
+By default, when noleak's HaveLeaked matcher finds one or more leaked
+goroutines, it dumps the goroutine backtraces in a condensed format that uses
+only a single line per call instead of two lines. Moreover, the backtraces
+abbreviate the source file location in the form of package/source.go:lineno:
+
+    goroutine 42 [flabbergasted]
+        main.foo.func1() at foo/test.go:6
+        created by main.foo at foo/test.go:5
+
+By setting noleak.ReportFilenameWithPath=true the leaky goroutine backtraces
+will show full path names for each source file:
+
+    goroutine 42 [flabbergasted]
+        main.foo.func1() at /home/go/foo/test.go:6
+        created by main.foo at home/go/foo/test.go:5
+
 Acknowledgement
 
 noleak has been heavily inspired by the Goroutine leak detector

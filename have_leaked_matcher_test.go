@@ -26,6 +26,9 @@ import (
 	. "github.com/onsi/gomega"
 )
 
+// Note: Go's stack dumps (backtraces) always contain forward slashes, even on
+// Windows. The following tests thus work the same both on *nix and Windows.
+
 var _ = Describe("HaveLeaked", func() {
 
 	It("renders indented goroutine information including (malformed) backtrace", func() {
@@ -42,8 +45,8 @@ created by main.foo
 		}
 		m := HaveLeaked().(*HaveLeakedMatcher)
 		Expect(m.listGoroutines(gs, 1)).To(Equal(`    goroutine 42 [stoned]
-        main.foo.func1() at /home/foo/test.go:6
-        created by main.foo at /home/foo/test.go:5`))
+        main.foo.func1() at foo/test.go:6
+        created by main.foo at foo/test.go:5`))
 
 		gs = []goroutine.Goroutine{
 			{
@@ -56,8 +59,8 @@ created by main.foo
 			},
 		}
 		Expect(m.listGoroutines(gs, 1)).To(Equal(`    goroutine 42 [stoned]
-        main.foo.func1() at /home/foo/test.go:6
-        created by main.foo at /home/foo/test.go:5`))
+        main.foo.func1() at foo/test.go:6
+        created by main.foo at foo/test.go:5`))
 
 		gs = []goroutine.Goroutine{
 			{
@@ -70,8 +73,8 @@ created by main.foo
 			},
 		}
 		Expect(m.listGoroutines(gs, 1)).To(Equal(`    goroutine 42 [stoned]
-        main.foo.func1() at /home/foo/test.go:6
-        created by main.foo at /home/foo/test.go:5`))
+        main.foo.func1() at foo/test.go:6
+        created by main.foo at foo/test.go:5`))
 
 		gs = []goroutine.Goroutine{
 			{
@@ -83,7 +86,7 @@ created by main.foo`,
 			},
 		}
 		Expect(m.listGoroutines(gs, 1)).To(Equal(`    goroutine 42 [stoned]
-        main.foo.func1() at /home/foo/test.go:6
+        main.foo.func1() at foo/test.go:6
         created by main.foo`))
 	})
 
@@ -240,6 +243,49 @@ created by main.foo`,
 				go func() {
 					<-done
 				}()
+			})
+
+		})
+
+	})
+
+	Context("handling file names and paths in backtraces", func() {
+
+		When("ReportFilenameWithPath is true", Ordered, func() {
+
+			var oldState bool
+
+			BeforeAll(func() {
+				oldState = ReportFilenameWithPath
+				ReportFilenameWithPath = true
+				DeferCleanup(func() {
+					ReportFilenameWithPath = oldState
+				})
+			})
+
+			It("doesn't shorten filenames", func() {
+				Expect(formatFilename("/home/foo/bar/baz.go")).To(Equal("/home/foo/bar/baz.go"))
+			})
+
+		})
+
+		When("ReportFilenameWithPath is false", Ordered, func() {
+
+			var oldState bool
+
+			BeforeAll(func() {
+				oldState = ReportFilenameWithPath
+				ReportFilenameWithPath = false
+				DeferCleanup(func() {
+					ReportFilenameWithPath = oldState
+				})
+			})
+
+			It("does return only package and filename, but no path", func() {
+				Expect(formatFilename("/home/foo/bar/baz.go")).To(Equal("bar/baz.go"))
+				Expect(formatFilename("/bar/baz.go")).To(Equal("bar/baz.go"))
+				Expect(formatFilename("/baz.go")).To(Equal("baz.go"))
+				Expect(formatFilename("/")).To(Equal("/"))
 			})
 
 		})
