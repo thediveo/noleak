@@ -1,5 +1,13 @@
 <!-- markdownlint-disable-next-line MD022 -->
 # `noleak`
+
+> This module has been integrated into [Gomega](https://onsi.github.io/gomega/)
+> and become `github.com/onsi/gomega/gleak`. It has been officially released as
+> of Gomega v1.20.0. Please see the Gomega documentation for [gleak: Finding
+> Leaked
+> Goroutines](https://onsi.github.io/gomega/#codegleakcode-finding-leaked-goroutines)
+> on usage.
+
 <img title="Leakiee the gopher" align="right" width="150" src="images/noleaky-small.png">
 
 [![PkgGoDev](https://img.shields.io/badge/-reference-blue?logo=go&logoColor=white&labelColor=505050)](https://pkg.go.dev/github.com/thediveo/noleak)

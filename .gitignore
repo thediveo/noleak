@@ -1,2 +1,3 @@
 noleak.test
 goroutine.test
+*.log
